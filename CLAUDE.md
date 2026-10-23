@@ -43,6 +43,10 @@ you diagnose, explain and apply every fix. Do not ask the human to edit files by
 - Done means: ALB DNS answers HTTP 200 publicly, all targets `healthy`,
   ECS service `runningCount == desiredCount` with no task churn for several minutes.
 - Build images for `linux/amd64` (this Mac may be Apple Silicon).
+- AWS account constraint: the IAM user is restricted by a Service Control Policy. Only
+  `us-east-2` accepts ECS/ECR/ELB/EC2 calls; `us-east-1`, `us-west-2` and `sa-east-1` return
+  AccessDenied. The CLI default region is already `us-east-2`; pass the region explicitly to
+  Terraform instead of trusting defaults in the repo.
 - Never print AWS secret keys or the GitHub token. Never commit `*.tfstate`, `.terraform/`,
   `*.tfvars` with secrets, or `node_modules/`.
 
