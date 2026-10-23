@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(CI=true npm:*)",
+      "Bash(terraform init:*)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform plan:*)",
+      "Bash(terraform apply:*)",
+      "Bash(terraform output:*)",
+      "Bash(terraform workspace:*)",
+      "Bash(terraform state list:*)",
+      "Bash(terraform show:*)",
+      "Bash(aws:*)",
+      "Bash(docker:*)",
+      "Bash(curl:*)",
+      "Bash(zip:*)",
+      "Bash(unzip -l:*)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:developer.hashicorp.com)",
+      "WebFetch(domain:registry.terraform.io)",
+      "WebFetch(domain:docs.aws.amazon.com)",
+      "WebFetch(domain:jestjs.io)",
+      "WebFetch(domain:eslint.org)"
+    ],
+    "deny": [
+      "Bash(terraform destroy:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "WebSearch"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sync-chat-history.sh" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sync-chat-history.sh" } ] }
+    ]
+  }
+}
