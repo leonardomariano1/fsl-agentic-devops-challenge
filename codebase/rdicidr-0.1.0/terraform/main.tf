@@ -118,6 +118,14 @@ resource "aws_ecs_task_definition" "app" {
       image     = "${aws_ecr_repository.app.repository_url}:${var.image_tag}"
       essential = true
 
+      portMappings = [
+        {
+          containerPort = var.container_port
+          hostPort      = var.container_port
+          protocol      = "tcp"
+        }
+      ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
