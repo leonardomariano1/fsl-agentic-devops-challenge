@@ -126,16 +126,36 @@ resource "aws_ecs_task_definition" "app" {
 
 # --- Security Group ---
 
-resource "aws_security_group" "ecs_service" {
-  name        = "${local.name}-ecs-sg"
-  description = "Security group for ECS service"
+resource "aws_security_group" "alb" {
+  name        = "${local.name}-alb-sg"
+  description = "Public HTTP ingress for the load balancer"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    from_port   = var.container_port
-    to_port     = var.container_port
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "ecs_service" {
+  name        = "${local.name}-ecs-sg"
+  description = "Security group for ECS service: only the ALB may reach the tasks"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -152,7 +172,7 @@ resource "aws_lb" "app" {
   name               = "${local.name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_service.id]
+  security_groups    = [aws_security_group.alb.id]
   subnets            = data.aws_subnets.default.ids
 }
 
