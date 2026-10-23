@@ -3,6 +3,16 @@ variable "aws_region" {
   description = "AWS region for deployment. No default on purpose: the account SCP only allows us-east-2, pass it per environment."
 }
 
+variable "environment" {
+  type        = string
+  description = "Deployment environment (devel or stage). Must match the selected Terraform workspace."
+
+  validation {
+    condition     = contains(["devel", "stage"], var.environment)
+    error_message = "environment must be devel or stage."
+  }
+}
+
 variable "app_name" {
   type        = string
   description = "Application name"
