@@ -1,7 +1,6 @@
 variable "aws_region" {
   type        = string
-  description = "AWS region for deployment"
-  default     = "us-east-1"
+  description = "AWS region for deployment (set per environment; only us-east-2 is allowed by the account SCP)"
 }
 
 variable "app_name" {
