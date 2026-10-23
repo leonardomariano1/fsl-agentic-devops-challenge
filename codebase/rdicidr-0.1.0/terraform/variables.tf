@@ -14,10 +14,9 @@ variable "app_name" {
   default     = "rdicidr"
 }
 
-variable "container_image" {
+variable "image_tag" {
   type        = string
-  description = "ECR image URI"
-  default     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/rdicidr:latest"
+  description = "Tag of the image in the ECR repository created by this configuration (e.g. the git SHA)"
 }
 
 variable "container_port" {
