@@ -12,3 +12,13 @@ output "cluster_name" {
   value       = aws_ecs_cluster.main.name
   description = "ECS cluster name"
 }
+
+output "service_name" {
+  value       = aws_ecs_service.app.name
+  description = "ECS service name"
+}
+
+output "alb_url" {
+  value       = "http://${aws_lb.app.dns_name}"
+  description = "Public URL of the application"
+}
