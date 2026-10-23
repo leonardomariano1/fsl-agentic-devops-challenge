@@ -101,6 +101,7 @@ jobs:
       - name: Run tests
         env:
           CI: true
+          REACT_APP_API_URL: http://api.example.test
         run: npm run test
 
   build:
