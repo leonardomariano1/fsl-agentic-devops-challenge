@@ -229,9 +229,4 @@ resource "aws_ecs_service" "app" {
 
   # ECS refuses a target group that is not yet attached to a load balancer.
   depends_on = [aws_lb_listener.app]
-
-  # Prevent Terraform from overriding autoscaling-managed task count
-  lifecycle {
-    ignore_changes = [desired_count, task_definition]
-  }
 }
