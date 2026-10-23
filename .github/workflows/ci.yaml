@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check that the head branch is allowed for this base
+        working-directory: ${{ github.workspace }}
         env:
           BASE: ${{ github.base_ref }}
           HEAD: ${{ github.head_ref }}
