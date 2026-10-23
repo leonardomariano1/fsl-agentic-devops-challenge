@@ -1,7 +1,16 @@
 variable "aws_region" {
   type        = string
-  description = "AWS region for deployment"
-  default     = "us-east-1"
+  description = "AWS region for deployment. No default on purpose: the account SCP only allows us-east-2, pass it per environment."
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment (devel or stage). Must match the selected Terraform workspace."
+
+  validation {
+    condition     = contains(["devel", "stage"], var.environment)
+    error_message = "environment must be devel or stage."
+  }
 }
 
 variable "app_name" {
@@ -10,10 +19,10 @@ variable "app_name" {
   default     = "rdicidr"
 }
 
-variable "container_image" {
+variable "image_tag" {
   type        = string
-  description = "ECR image URI"
-  default     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/rdicidr:latest"
+  description = "Tag of the image in the ECR repository managed here. Pass the git SHA at deploy time."
+  default     = "latest"
 }
 
 variable "container_port" {
@@ -25,7 +34,7 @@ variable "container_port" {
 variable "health_check_path" {
   type        = string
   description = "Health check endpoint path"
-  default     = "/healthz"
+  default     = "/health"
 }
 
 variable "desired_count" {
