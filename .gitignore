@@ -3,3 +3,5 @@ node_modules/
 .terraform/
 *.tfstate
 *.tfstate.*
+terraform.tfstate.d/
+*.tfvars.local

@@ -1,7 +1,11 @@
 variable "aws_region" {
   type        = string
-  description = "AWS region for deployment"
-  default     = "us-east-1"
+  description = "AWS region for deployment (set per environment; only us-east-2 is allowed by the account SCP)"
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment (devel or stage); isolates names, vars and workspace state"
 }
 
 variable "app_name" {
@@ -10,10 +14,9 @@ variable "app_name" {
   default     = "rdicidr"
 }
 
-variable "container_image" {
+variable "image_tag" {
   type        = string
-  description = "ECR image URI"
-  default     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/rdicidr:latest"
+  description = "Tag of the image in the ECR repository created by this configuration (e.g. the git SHA)"
 }
 
 variable "container_port" {
@@ -25,7 +28,7 @@ variable "container_port" {
 variable "health_check_path" {
   type        = string
   description = "Health check endpoint path"
-  default     = "/healthz"
+  default     = "/health"
 }
 
 variable "desired_count" {

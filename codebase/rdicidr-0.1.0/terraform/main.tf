@@ -9,6 +9,17 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = var.app_name
+      Environment = var.environment
+    }
+  }
+}
+
+locals {
+  name = "${var.app_name}-${var.environment}"
 }
 
 # --- Networking (default VPC) ---
@@ -24,16 +35,28 @@ data "aws_subnets" "default" {
   }
 }
 
+# --- ECR ---
+
+resource "aws_ecr_repository" "app" {
+  name                 = local.name
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
 # --- ECS Cluster ---
 
 resource "aws_ecs_cluster" "main" {
-  name = "${var.app_name}-cluster"
+  name = "${local.name}-cluster"
 }
 
 # --- IAM ---
 
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "${var.app_name}-task-execution-role"
+  name = "${local.name}-task-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -49,40 +72,22 @@ resource "aws_iam_role" "ecs_task_execution" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_task_execution_policy" {
-  name = "${var.app_name}-task-execution-policy"
-  role = aws_iam_role.ecs_task_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:CreateLogGroup"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 # --- CloudWatch ---
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/${var.app_name}"
+  name              = "/ecs/${local.name}"
   retention_in_days = 30
 }
 
 # --- ECS Task Definition ---
 
 resource "aws_ecs_task_definition" "app" {
-  family                   = var.app_name
+  family                   = local.name
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
@@ -92,8 +97,16 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name      = var.app_name
-      image     = var.container_image
+      image     = "${aws_ecr_repository.app.repository_url}:${var.image_tag}"
       essential = true
+
+      portMappings = [
+        {
+          containerPort = var.container_port
+          hostPort      = var.container_port
+          protocol      = "tcp"
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -109,16 +122,36 @@ resource "aws_ecs_task_definition" "app" {
 
 # --- Security Group ---
 
-resource "aws_security_group" "ecs_service" {
-  name        = "${var.app_name}-ecs-sg"
-  description = "Security group for ECS service"
+resource "aws_security_group" "alb" {
+  name        = "${local.name}-alb-sg"
+  description = "Public HTTP into the load balancer"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    from_port   = var.container_port
-    to_port     = var.container_port
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "ecs_service" {
+  name        = "${local.name}-ecs-sg"
+  description = "Container port reachable only from the load balancer"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -132,15 +165,15 @@ resource "aws_security_group" "ecs_service" {
 # --- ALB ---
 
 resource "aws_lb" "app" {
-  name               = "${var.app_name}-alb"
+  name               = "${local.name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_service.id]
+  security_groups    = [aws_security_group.alb.id]
   subnets            = data.aws_subnets.default.ids
 }
 
 resource "aws_lb_target_group" "app" {
-  name        = "${var.app_name}-tg"
+  name        = "${local.name}-tg"
   port        = var.container_port
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -150,10 +183,10 @@ resource "aws_lb_target_group" "app" {
     enabled             = true
     path                = var.health_check_path
     port                = "traffic-port"
-    healthy_threshold   = 3
+    healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
-    interval            = 30
+    interval            = 10
     matcher             = "200"
   }
 }
@@ -172,11 +205,13 @@ resource "aws_lb_listener" "app" {
 # --- ECS Service ---
 
 resource "aws_ecs_service" "app" {
-  name            = "${var.app_name}-service"
+  name            = "${local.name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = var.desired_count
   launch_type     = "FARGATE"
+
+  health_check_grace_period_seconds = 60
 
   network_configuration {
     subnets          = data.aws_subnets.default.ids
@@ -190,8 +225,5 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  # Prevent Terraform from overriding autoscaling-managed task count
-  lifecycle {
-    ignore_changes = [desired_count, task_definition]
-  }
+  depends_on = [aws_lb_listener.app]
 }
