@@ -46,7 +46,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
 
       - name: Install dependencies
         run: npm install
@@ -67,7 +67,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
 
       - name: Restore node_modules
         uses: actions/cache/restore@v3
@@ -91,7 +91,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
 
       - name: Restore node_modules
         uses: actions/cache/restore@v3
@@ -114,7 +114,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
 
       - name: Restore node_modules
         uses: actions/cache/restore@v3
