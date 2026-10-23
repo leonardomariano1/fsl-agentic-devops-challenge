@@ -98,6 +98,7 @@ jobs:
       - name: Run tests
         env:
           CI: true
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL || 'http://localhost:8080/api' }}
         run: npm run test
 
   build:
@@ -119,4 +120,6 @@ jobs:
           key: deps-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
 
       - name: Build project
+        env:
+          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL || 'http://localhost:8080/api' }}
         run: npm run build
