@@ -74,27 +74,11 @@ resource "aws_iam_role" "ecs_task_execution" {
   })
 }
 
-resource "aws_iam_role_policy" "ecs_task_execution_policy" {
-  name = "${local.name}-task-execution-policy"
-  role = aws_iam_role.ecs_task_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:CreateLogGroup"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+# AmazonECSTaskExecutionRolePolicy grants ecr:GetAuthorizationToken plus the
+# layer/image pulls and CloudWatch Logs writes the Fargate agent needs.
+resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 # --- CloudWatch ---
