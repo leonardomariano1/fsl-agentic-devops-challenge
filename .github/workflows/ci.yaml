@@ -1,0 +1,127 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - devel
+      - stage
+
+defaults:
+  run:
+    working-directory: codebase/rdicidr-0.1.0
+
+jobs:
+  guard-stage-source:
+    # Branching rules: feature/** or bugfix/** may target devel; only devel may target stage.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check head branch against the branching rules
+        # No checkout in this job, so the app working-directory default does not exist yet.
+        working-directory: ${{ github.workspace }}
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "PR $HEAD_REF -> $BASE_REF"
+          case "$BASE_REF" in
+            stage)
+              [ "$HEAD_REF" = "devel" ] || { echo "::error::Only devel may be merged into stage"; exit 1; } ;;
+            devel)
+              case "$HEAD_REF" in
+                feature/*|bugfix/*) ;;
+                *) echo "::error::Branches into devel must be feature/<topic> or bugfix/<topic>"; exit 1 ;;
+              esac ;;
+            *)
+              echo "::error::Unexpected base branch $BASE_REF"; exit 1 ;;
+          esac
+
+  install:
+    needs: [guard-stage-source]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Cache node_modules
+        uses: actions/cache/save@v3
+        with:
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+
+  lint:
+    needs: [install]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v3
+        with:
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          fail-on-cache-miss: true
+
+      - name: Run linter
+        run: npm run lint
+
+  test:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v3
+        with:
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          fail-on-cache-miss: true
+
+      - name: Run tests
+        env:
+          CI: true
+          REACT_APP_API_URL: http://api.example.test
+        run: npm run test
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: codebase/rdicidr-0.1.0/.nvmrc
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v3
+        with:
+          path: codebase/rdicidr-0.1.0/node_modules
+          key: node-modules-${{ hashFiles('codebase/rdicidr-0.1.0/package-lock.json') }}
+          fail-on-cache-miss: true
+
+      - name: Build project
+        run: npm run build
