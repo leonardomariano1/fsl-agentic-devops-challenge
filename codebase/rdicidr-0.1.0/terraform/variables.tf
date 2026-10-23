@@ -3,6 +3,11 @@ variable "aws_region" {
   description = "AWS region for deployment (set per environment; only us-east-2 is allowed by the account SCP)"
 }
 
+variable "environment" {
+  type        = string
+  description = "Deployment environment (devel or stage); isolates names, vars and workspace state"
+}
+
 variable "app_name" {
   type        = string
   description = "Application name"
