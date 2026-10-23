@@ -5,16 +5,34 @@ defaults:
     working-directory: codebase/rdicidr-0.1.0
 
 on:
-  push:
-    branches:
-      - main
-      - 'feature-*'
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - main
+      - devel
+      - stage
 
 jobs:
+  guard-stage-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the head branch is allowed for this base
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$BASE" in
+            stage)
+              [ "$HEAD" = "devel" ] || { echo "::error::only devel may be merged into stage (got '$HEAD')"; exit 1; } ;;
+            devel)
+              case "$HEAD" in
+                feature/*|bugfix/*) ;;
+                *) echo "::error::branches into devel must be feature/** or bugfix/** (got '$HEAD')"; exit 1 ;;
+              esac ;;
+          esac
+          echo "head '$HEAD' is allowed into '$BASE'"
+
   install:
+    needs: [guard-stage-source]
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
