@@ -163,10 +163,10 @@ resource "aws_lb_target_group" "app" {
     enabled             = true
     path                = var.health_check_path
     port                = "traffic-port"
-    healthy_threshold   = 3
+    healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
-    interval            = 30
+    interval            = 10
     matcher             = "200"
   }
 }

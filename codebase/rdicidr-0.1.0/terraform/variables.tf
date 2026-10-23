@@ -28,7 +28,7 @@ variable "container_port" {
 variable "health_check_path" {
   type        = string
   description = "Health check endpoint path"
-  default     = "/healthz"
+  default     = "/health"
 }
 
 variable "desired_count" {
